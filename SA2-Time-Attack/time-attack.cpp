@@ -4,7 +4,11 @@
 Trampoline* CheckAndLoadCountDown_t;
 SaveLevelInfo* savePtr = nullptr;
 uint8_t msgDelay = 0;
+uint8_t msgDelay2 = 0;
 uint8_t inputDelay = 0;
+uint8_t inputDelay2 = 0;
+MinSec customTime = { 0, 0 };
+
 
 SaveLevelInfo* GetSavePtr() {
 
@@ -23,9 +27,6 @@ bool SetTimeAttack_PB() {
 
 	if (timeAttackMode != PB || CurrentLevel >= LevelIDs_BigFoot && CurrentLevel != LevelIDs_Route101280)
 		return false;
-
-	//get player level stat information from the weird save struct.
-	savePtr = GetSavePtr();
 
 	if (savePtr) {
 
@@ -46,7 +47,6 @@ bool SetTimeAttack_PB() {
 		if (min < 30) { //The game set your PB to 30 min when you never played a stage, we don't want the timer to start in that case.
 
 			if (min > 0 || sec > 0) {
-
 				LoadCountDownTimer(savePtr->Scores[mission].Time.Minutes, savePtr->Scores[mission].Time.Seconds + round);
 				return true;
 			}
@@ -58,10 +58,13 @@ bool SetTimeAttack_PB() {
 
 bool SetTimeAttack_Goal() {
 
-	if (timeAttackMode != Custom)
+	char min = customTime.Minutes;
+	char sec = customTime.Seconds;
+
+	if (timeAttackMode != Custom || !min && sec <= 5)
 		return false;
 
-	LoadCountDownTimer(3, 0);
+	LoadCountDownTimer(customTime.Minutes, customTime.Seconds);
 	return true;
 }
 
@@ -91,6 +94,9 @@ void FixTimerPosition() {
 void CheckAndLoadCountDown_r(char min, char sec) {
 
 	FixTimerPosition();
+
+	//get player level stat information from the weird save struct.
+	savePtr = GetSavePtr();
 
 	if (SetTimeAttack_PB() || SetTimeAttack_Goal())
 		return;
@@ -130,12 +136,6 @@ void DisplayBestRingsAndScore(short Rings, int score, int mission) {
 	return;
 }
 
-void DisplayCustomTimeGoal(char min, char sec) {
-	DisplayDebugStringFormatted(NJM_LOCATION(2, 16), "Goal:");
-	DisplayDebugStringFormatted(NJM_LOCATION(12, 16), "%d:", min);
-	DisplayDebugStringFormatted(NJM_LOCATION(14, 16), "%d", sec);
-}
-
 void DisplayARankRequirement(int posY) {
 
 	if (CurrentLevel >= LevelIDs_BigFoot && CurrentLevel != LevelIDs_Route101280)
@@ -171,8 +171,6 @@ void DisplayARankRequirement(int posY) {
 			DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 1), "%d:", timer.Minutes);
 			DisplayDebugStringFormatted(NJM_LOCATION(4, posY + 1), "%d", timer.Seconds);
 		}
-
-
 	}
 
 	return;
@@ -197,22 +195,22 @@ void DisplayRankEstimate(int posY) {
 	DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 6), "Rank Estimate:");
 	DisplayDebugStringFormatted(NJM_LOCATION(16, posY + 6), Rank.c_str());
 	return;
-
 }
 
 void DisplayMissionGoal() {
 	const char* missionText = getCurrentMission();
 
-
 	if (missionText != nullptr)
 	{
 		DisplayDebugStringFormatted(NJM_LOCATION(2, 8), missionText);
 	}
+
+	return;
 }
 
 void Pause_DisplayInformation() {
 
-	if (!savePtr || GameState != GameStates_Pause)
+	if (!savePtr || GameState != GameStates_Pause || !isInfoAllowed)
 		return;
 
 	int mission = MissionNum;
@@ -231,11 +229,6 @@ void Pause_DisplayInformation() {
 	DisplayBestRingsAndScore(savePtr->Scores[mission].Rings, savePtr->Scores[mission].Score, mission);
 
 	SetDebugFontColor(purpleColor);
-	if (timeAttackMode == Custom)
-	{
-		posY = 18;
-		DisplayCustomTimeGoal(min, sec);
-	}
 
 	DisplayARankRequirement(posY);
 	SetDebugFontColor(greyColor);
@@ -247,7 +240,7 @@ void Pause_DisplayInformation() {
 
 void DisplayTimeAttackMode() {
 
-	if (!msgDelay)
+	if (!msgDelay || !isTimeAttackAllowed && !isCustomTimeAllowed)
 		return;
 
 	SetDebugFontColor(greyColor);
@@ -299,27 +292,127 @@ void TimeAttack_ChangeMode() {
 	{
 	case off:
 	default:
-		timeAttackMode = PB;
+
+		if (isTimeAttackAllowed)
+			timeAttackMode = PB;
+		else if (isCustomTimeAllowed)
+			timeAttackMode = Custom;
+
 		return;
 	case PB:
-		timeAttackMode = Custom;
+
+		if (isCustomTimeAllowed)
+			timeAttackMode = Custom;
+		else
+			timeAttackMode = off;
+
 		return;
 	case Custom:
 		timeAttackMode = off;
 		return;
 	}
+}
 
+
+void DisplayNewCustomTime() {
+
+	if (!msgDelay2 || !isCustomTimeAllowed)
+		return;
+
+	SetDebugFontColor(redColor);
+	DisplayDebugStringFormatted(NJM_LOCATION(2, 4), "TIME ATTACK GOAL:");
+
+	DisplayDebugStringFormatted(NJM_LOCATION(20, 4), "%d:", customTime.Minutes);
+	DisplayDebugStringFormatted(NJM_LOCATION(23, 4), "%d", customTime.Seconds);
+
+	msgDelay2--;
+	SetDebugFontColor(greyColor);
+	return;
+}
+
+void TimeAttack_SetCustomTime() {
+
+	if (inputDelay2 > 0) {
+		inputDelay2--;
+		return;
+	}
+
+	if (GameState != 0 || GameMode != GameMode_Advertise || !isCustomTimeAllowed)
+	{
+		return;
+	}
+
+
+	if (!customTime.Minutes && customTime.Seconds <= 4)
+		customTime.Seconds = 5;
+
+	if (ControllerPointers[0]->on & Buttons_L) {
+
+
+		if (customTime.Minutes < 29)
+			customTime.Minutes++;
+		else
+			customTime.Minutes = 0;
+
+		inputDelay2 = 7;
+		msgDelay2 = 160;
+
+		if (timeAttackMode != Custom) {
+			timeAttackMode = Custom;
+			msgDelay = 120;
+		}
+	}
+
+
+	if (ControllerPointers[0]->on & Buttons_R) {
+
+		if (customTime.Seconds < 59)
+			customTime.Seconds++;
+		else
+			customTime.Seconds = 0;
+
+
+		inputDelay2 = 8;
+		msgDelay2 = 160;
+
+		if (timeAttackMode != Custom) {
+			timeAttackMode = Custom;
+			msgDelay = 120;
+		}
+	}
+
+
+}
+
+void DisplayTimeAttackRecap() {
+
+	if (!isTimeAttackAllowed && !isCustomTimeAllowed || timeAttackMode == off)
+		return;
+
+	if (GameState == GameStates_Loading) {
+		msgDelay = 2;
+		msgDelay2 = 2;
+	}
+	return;
 }
 
 void TimeAttack_OnFrames() {
 	TimeAttack_ChangeMode();
+
 	DisplayTimeAttackMode();
+	TimeAttack_SetCustomTime();
+	DisplayNewCustomTime();
+
 	Pause_DisplayInformation();
+	DisplayTimeAttackRecap();
 	return;
 }
 
 
 void init_TimeAttack() {
+
+	if (!isTimeAttackAllowed && !isCustomTimeAllowed)
+		return;
 
 	CheckAndLoadCountDown_t = new Trampoline((int)CheckAndLoadCountDown, (int)CheckAndLoadCountDown + 0x5, CheckAndLoadCountDown_r);
 	return;

@@ -1,12 +1,14 @@
 #pragma once
 
 extern uint8_t timeAttackMode;
+extern bool isTimeAttackAllowed;
+extern bool isCustomTimeAllowed;
+extern bool isInfoAllowed;
 
 extern HelperFunctions HelperFunctionsGlobal;
 
 void ReadConfig(const char* path);
 void init_TimeAttack();
-void GetPB();
 void initializeDebugText();
 void DisplayDebugStringFormatted(Int loc, const char* Format, ...);
 void TimeAttack_OnFrames();

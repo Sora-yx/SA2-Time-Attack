@@ -1,12 +1,27 @@
 #include "pch.h"
 
-uint8_t timeAttackMode = 1;
+bool isTimeAttackAllowed = true;
+bool isCustomTimeAllowed = true;
+bool isInfoAllowed = true;
+
+uint8_t timeAttackMode = 0;
 
 void ReadConfig(const char* path) {
 
 	const IniFile* config = new IniFile(std::string(path) + "\\config.ini");
-	timeAttackMode = config->getInt("General", "time", 1);
+
+
+	isTimeAttackAllowed = config->getBool("General", "isTimeAttackAllowed", true);
+	isCustomTimeAllowed = config->getBool("General", "isCustomTimeAllowed", true);
+	isInfoAllowed = config->getBool("General", "isInfoAllowed", true);
 
 	delete config;
 
+	if (isTimeAttackAllowed)
+		timeAttackMode = 1;
+
+	if (isCustomTimeAllowed && !isTimeAttackAllowed)
+		timeAttackMode = 2;
+
+	return;
 }
