@@ -17,12 +17,14 @@ extern "C" {
 			MessageBoxA(MainWindowHandle, error, "SA2 Time Attack", MB_ICONWARNING);
 		}
 
+
 		ReadConfig(path); //get mod settings by the user
 		init_TimeAttack();
+		initializeDebugText();
 	}
 
 	__declspec(dllexport) void __cdecl OnFrame() {
-
+		TimeAttack_OnFrames();
 	}
 
 
