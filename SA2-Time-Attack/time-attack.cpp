@@ -65,8 +65,32 @@ bool SetTimeAttack_Goal() {
 	return true;
 }
 
+void FixTimerPosition() {
+	
+	float vanillaPos = 48.0f;
+	float newPos = 74.0f;
+
+	if (isKartLevel()) {
+		MinCountdown_Sprite.posY = newPos;
+		MSCountdown_Sprite.posY = newPos;
+		SecCountdown_Sprite.posY = newPos;
+		ColonCountdown_Sprite.posY = newPos;
+		Colon2Countdown_Sprite.posY = newPos;
+	}
+	else {
+		MinCountdown_Sprite.posY = vanillaPos;
+		MSCountdown_Sprite.posY = vanillaPos;
+		SecCountdown_Sprite.posY = vanillaPos;
+		ColonCountdown_Sprite.posY = vanillaPos;
+		Colon2Countdown_Sprite.posY = vanillaPos;
+	}
+
+	return;
+}
+
 void CheckAndLoadCountDown_r(char min, char sec) {
 
+	FixTimerPosition();
 
 	if (SetTimeAttack_PB() || SetTimeAttack_Goal())
 		return;
@@ -85,7 +109,7 @@ void DisplayBestTime(char min, char sec, char ms) {
 	DisplayDebugStringFormatted(NJM_LOCATION(2, 10), "Best Time:");
 	DisplayDebugStringFormatted(NJM_LOCATION(12, 10), "%d:", min);
 	DisplayDebugStringFormatted(NJM_LOCATION(14, 10), "%d.", sec);
-	DisplayDebugStringFormatted(NJM_LOCATION(17, 10), "%d", ms);
+	DisplayDebugStringFormatted(NJM_LOCATION(16, 10), " %d", ms);
 }
 
 void DisplayBestRingsAndScore(short Rings, int score, int mission) {
@@ -170,7 +194,7 @@ void DisplayCurrentTimeBonus(int posY) {
 void DisplayRankEstimate(int posY) {
 
 	std::string Rank = getCurrentRankPace();
-	DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 6), "Rank Estimate:");	
+	DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 6), "Rank Estimate:");
 	DisplayDebugStringFormatted(NJM_LOCATION(16, posY + 6), Rank.c_str());
 	return;
 
