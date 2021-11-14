@@ -25,7 +25,12 @@ int getCurrentTimeBonus() {
 
 MinSec Get_ARank_TimeRequirement() {
 
-	if (CurrentLevel == LevelIDs_Route101280)
+	int level = CurrentLevel;
+
+	if (level >= LevelIDs_CannonsCoreS && level <= LevelIDs_CannonsCoreK)
+		level = LevelIDs_CannonsCoreS;
+
+	if (level == LevelIDs_Route101280)
 	{
 		if (CurrentCharacter == Characters_Rouge)
 			return Route280MissionTimes[MissionNum].ARank;
@@ -42,11 +47,11 @@ MinSec Get_ARank_TimeRequirement() {
 
 	for (Uint8 i = 0; i < arraySize; i++) {
 
-		if (MissionNum == 1 && CurrentLevel == Mission2Times[i].Level) {
+		if (MissionNum == 1 && level == Mission2Times[i].Level) {
 			return Mission2Times[i].ARank;
 		}
 
-		if (MissionNum == 2 && CurrentLevel == Mission3Times[i].Level) {
+		if (MissionNum == 2 && level == Mission3Times[i].Level) {
 			return Mission3Times[i].ARank;
 		}
 	}
@@ -58,18 +63,22 @@ MinSec Get_ARank_TimeRequirement() {
 int Get_ARank_ScoreRequirement() {
 
 	int arraySize = 30;
+	int level = CurrentLevel;
+
+	if (CurrentLevel >= LevelIDs_CannonsCoreS && CurrentLevel <= LevelIDs_CannonsCoreK)
+		level = LevelIDs_CannonsCoreS;
 
 	for (Uint8 i = 0; i < arraySize; i++) {
 
-		if (!MissionNum && CurrentLevel == Mission1Scores[i].Level) {
+		if (!MissionNum && level == Mission1Scores[i].Level) {
 			return Mission1Scores[i].ARank * 100;
 		}
 
-		if (MissionNum == 3 && CurrentLevel == Mission4Scores[i].Level) {
+		if (MissionNum == 3 && level == Mission4Scores[i].Level) {
 			return Mission4Scores[i].ARank * 100;
 		}
 
-		if (MissionNum == 4 && CurrentLevel == Mission5Scores[i].Level) {
+		if (MissionNum == 4 && level == Mission5Scores[i].Level) {
 			return Mission5Scores[i].ARank * 100;
 		}
 	}

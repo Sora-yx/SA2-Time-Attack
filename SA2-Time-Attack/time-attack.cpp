@@ -20,7 +20,12 @@ SaveLevelInfo* GetSavePtr() {
 	if (CurrentLevel >= LevelIDs_BigFoot)
 		return nullptr;
 
-	return (SaveLevelInfo*)&PlayerLevelStatsArray[196 * CurrentLevel];
+	int level = CurrentLevel;
+
+	if (level >= LevelIDs_CannonsCoreS && level <= LevelIDs_CannonsCoreK)
+		level = LevelIDs_CannonsCoreS;
+
+	return (SaveLevelInfo*)&PlayerLevelStatsArray[196 * level];
 }
 
 bool SetTimeAttack_PB() {
@@ -69,7 +74,7 @@ bool SetTimeAttack_Goal() {
 }
 
 void FixTimerPosition() {
-	
+
 	float vanillaPos = 48.0f;
 	float newPos = 74.0f;
 
@@ -126,11 +131,11 @@ void DisplayBestRingsAndScore(short Rings, int score, int mission) {
 	SetDebugFontColor(lightOrange);
 
 	if (Rings)
-		DisplayDebugStringFormatted(NJM_LOCATION(2, 12), "Best Rings:%d", Rings);
+		DisplayDebugStringFormatted(NJM_LOCATION(2, 11), "Best Rings:%d", Rings);
 
 	if (MissionNum != 1 && MissionNum != 2 && score) {
 		SetDebugFontColor(lightGreen);
-		DisplayDebugStringFormatted(NJM_LOCATION(2, 14), "Best Score:%d", score);
+		DisplayDebugStringFormatted(NJM_LOCATION(2, 12), "Best Score:%d", score);
 	}
 
 	return;
@@ -189,13 +194,35 @@ void DisplayCurrentTimeBonus(int posY) {
 	return;
 }
 
-void DisplayRankEstimate(int posY) {
+void DisplayFinalScoreEstimate(int posY) {
 
-	std::string Rank = getCurrentRankPace();
-	DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 6), "Rank Estimate:");
-	DisplayDebugStringFormatted(NJM_LOCATION(16, posY + 6), Rank.c_str());
+	if (CurrentLevel >= LevelIDs_BigFoot)
+		return;
+
+	int bonus = getCurrentTimeBonus();
+
+	if (bonus > 0)
+		DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 5), "Final Score:%d", bonus + ScoreP1);
+
 	return;
 }
+
+void DisplayRankEstimate(int posY) {
+	std::string Rank = getCurrentRankPace();
+	DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 4), "Rank:");
+	DisplayDebugStringFormatted(NJM_LOCATION(8, posY + 4), Rank.c_str());
+	return;
+}
+
+void DisplayRunEstimate(int posY) {
+	SetDebugFontColor(lightOrange);
+	DisplayDebugStringFormatted(NJM_LOCATION(2, posY + 3), "Run Estimate:");
+	DisplayFinalScoreEstimate(posY);
+	DisplayRankEstimate(posY);
+	return;
+}
+
+
 
 void DisplayMissionGoal() {
 	const char* missionText = getCurrentMission();
@@ -232,15 +259,16 @@ void Pause_DisplayInformation() {
 
 	DisplayARankRequirement(posY);
 	SetDebugFontColor(greyColor);
-	DisplayCurrentTimeBonus(posY);
-	DisplayRankEstimate(posY);
+	//DisplayCurrentTimeBonus(posY);
+
+	DisplayRunEstimate(posY);
 	SetDebugFontColor(greyColor);
 	return;
 }
 
 void DisplayTimeAttackMode() {
 
-	if (!msgDelay || !isTimeAttackAllowed && !isCustomTimeAllowed)
+	if (!msgDelay || !isTimeAttackAllowed && !isCustomTimeAllowed || GameState > GameStates_Loading)
 		return;
 
 	SetDebugFontColor(greyColor);
@@ -316,14 +344,14 @@ void TimeAttack_ChangeMode() {
 
 void DisplayNewCustomTime() {
 
-	if (!msgDelay2 || !isCustomTimeAllowed)
+	if (!msgDelay2 || !isCustomTimeAllowed || GameState > GameStates_Loading)
 		return;
 
 	SetDebugFontColor(redColor);
-	DisplayDebugStringFormatted(NJM_LOCATION(2, 4), "TIME ATTACK GOAL:");
+	DisplayDebugStringFormatted(NJM_LOCATION(2, 5), "TIME ATTACK GOAL:");
 
-	DisplayDebugStringFormatted(NJM_LOCATION(20, 4), "%d:", customTime.Minutes);
-	DisplayDebugStringFormatted(NJM_LOCATION(23, 4), "%d", customTime.Seconds);
+	DisplayDebugStringFormatted(NJM_LOCATION(20, 5), "%d:", customTime.Minutes);
+	DisplayDebugStringFormatted(NJM_LOCATION(23, 5), "%d", customTime.Seconds);
 
 	msgDelay2--;
 	SetDebugFontColor(greyColor);
@@ -372,7 +400,7 @@ void TimeAttack_SetCustomTime() {
 			customTime.Seconds = 0;
 
 
-		inputDelay2 = 8;
+		inputDelay2 = 7;
 		msgDelay2 = 160;
 
 		if (timeAttackMode != Custom) {
@@ -381,18 +409,21 @@ void TimeAttack_SetCustomTime() {
 		}
 	}
 
-
+	return;
 }
 
 void DisplayTimeAttackRecap() {
 
-	if (!isTimeAttackAllowed && !isCustomTimeAllowed || timeAttackMode == off)
+	if (!isTimeAttackAllowed && !isCustomTimeAllowed || timeAttackMode == off || !GameState)
 		return;
 
 	if (GameState == GameStates_Loading) {
-		msgDelay = 2;
-		msgDelay2 = 2;
+		msgDelay = 1;
+
+		if (timeAttackMode == Custom)
+			msgDelay2 = 1;
 	}
+
 	return;
 }
 
